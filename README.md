@@ -15,3 +15,10 @@ C言語によるHTTP Server実装。[SWE協会](https://www.swe.or.jp/)内で行
   - マルチスレッド対応を行う
   - シグナルを受け取ったら新規接続停止して、全接続終了に正常終了する
   - HTTPS対応を行う
+
+## 開発
+### Hello,World
+```sh
+gcc src/hello-world.c -o build/hello-world
+./build/hello-world # hello, world
+```
