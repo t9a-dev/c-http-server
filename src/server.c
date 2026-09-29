@@ -53,6 +53,8 @@ bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen):
 #include <string.h>
 #include <sys/socket.h>
 
+#define LISTEN_BACKLOG 50 // man bind(2)のexampleを参考にそのまま流用
+
 void print_errno(void);
 
 int main(int argc, const char *argv[]) {
@@ -95,6 +97,12 @@ int main(int argc, const char *argv[]) {
   /* ========== BIND ========== */
 
   /* ========== LISTEN ========== */
+  int listen_fd = listen(socket_fd, LISTEN_BACKLOG);
+  if (listen_fd == -1) {
+    print_errno();
+    err(EXIT_FAILURE, "listen");
+  }
+  printf("listen ok.\n");
   /* ========== LISTEN ========== */
 
   /* ========== ACCEPT ========== */
