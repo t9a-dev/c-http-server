@@ -117,5 +117,15 @@ int main(int argc, const char *argv[]) {
   printf("accept ok.\n");
   /* ========== accept ========== */
 
+  /* ========== RECV ========== */
+  char buffer[1000];
+  int recived_len = recv(accept_fd, &buffer, sizeof(buffer), 0);
+  if (recived_len == -1) {
+    handle_error("recv");
+  }
+  printf("recive data len:%d\n", recived_len);
+  printf("recive data:%s\n", buffer);
+  /* ========== RECV ========== */
+
   return 0;
 }
