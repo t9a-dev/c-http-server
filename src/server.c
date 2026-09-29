@@ -109,7 +109,17 @@ int main(int argc, const char *argv[]) {
   /* ========== LISTEN ========== */
 
   /* ========== ACCEPT ========== */
-  /* ========== ACCEPT ========== */
+  socklen_t addr_size;
+  addr_size = sizeof(sockaddr_in_t);
+  int accept_fd =
+      accept(socket_fd, (struct sockaddr *)&sockaddr_in_t, &addr_size);
+  if (accept_fd == -1) {
+    print_errno();
+    err(EXIT_FAILURE, "accept");
+  }
+  printf("accept ok.\n");
+  /* ========== accept ========== */
+
   return 0;
 }
 
