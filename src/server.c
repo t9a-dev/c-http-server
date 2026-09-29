@@ -47,16 +47,18 @@
 
 #include <arpa/inet.h> // man -k ipv4 -> man 3 inet_pton
 #include <err.h>
-#include <errno.h>
 #include <netinet/in.h> // man sockaddr
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <sys/socket.h>
 
 #define LISTEN_BACKLOG 50 // man bind(2)のexampleを参考にそのまま流用
-
-void print_errno(void);
+// man bind(2)のexampleを参考にそのまま流用
+#define handle_error(msg)                                                      \
+  do {                                                                         \
+    perror(msg);                                                               \
+    exit(EXIT_FAILURE);                                                        \
+  } while (0)
 
 int main(int argc, const char *argv[]) {
   /* ========== SOCKET ========== */
@@ -64,8 +66,7 @@ int main(int argc, const char *argv[]) {
   socket_fd = socket(AF_INET, SOCK_STREAM, 6);
   // man 2 bind のexampleのエラー処理を参考にした
   if (socket_fd == -1) {
-    print_errno();
-    err(EXIT_FAILURE, "socket");
+    handle_error("socket");
   }
   printf("create socket ok.\n");
   /* ========== SOCKET ========== */
@@ -76,8 +77,7 @@ int main(int argc, const char *argv[]) {
   struct in_addr in_addr_t;
   struct sockaddr_in sockaddr_in_t;
   if (inet_pton(AF_INET, "127.0.0.1", &in_addr_t) == -1) {
-    print_errno();
-    err(EXIT_FAILURE, "inet_pton");
+    handle_error("inet_pton");
   }
   sockaddr_in_t.sin_family = AF_INET;
   sockaddr_in_t.sin_addr = in_addr_t;
@@ -93,8 +93,7 @@ int main(int argc, const char *argv[]) {
   bind_fd = bind(socket_fd, (const struct sockaddr *)&sockaddr_in_t,
                  sizeof(sockaddr_in_t));
   if (bind_fd == -1) {
-    print_errno();
-    err(EXIT_FAILURE, "bind");
+    handle_error("bind");
   }
   printf("socket_fd bind ok.\n");
   /* ========== BIND ========== */
@@ -102,8 +101,7 @@ int main(int argc, const char *argv[]) {
   /* ========== LISTEN ========== */
   int listen_fd = listen(socket_fd, LISTEN_BACKLOG);
   if (listen_fd == -1) {
-    print_errno();
-    err(EXIT_FAILURE, "listen");
+    handle_error("listen");
   }
   printf("listen ok.\n");
   /* ========== LISTEN ========== */
@@ -114,13 +112,10 @@ int main(int argc, const char *argv[]) {
   int accept_fd =
       accept(socket_fd, (struct sockaddr *)&sockaddr_in_t, &addr_size);
   if (accept_fd == -1) {
-    print_errno();
-    err(EXIT_FAILURE, "accept");
+    handle_error("accept");
   }
   printf("accept ok.\n");
   /* ========== accept ========== */
 
   return 0;
 }
-
-void print_errno(void) { printf("error(%s:%d)\n", strerror(errno), errno); }
