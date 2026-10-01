@@ -115,7 +115,7 @@ int main(int argc, const char *argv[]) {
     handle_error("accept");
   }
   printf("accept ok.\n");
-  /* ========== accept ========== */
+  /* ========== ACCEPT ========== */
 
   /* ========== RECV ========== */
   char buffer[1000];
