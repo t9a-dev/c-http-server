@@ -8,4 +8,4 @@ printf "\n"
 
 sleep 1
 
-curl -X POST http://127.0.0.1:8080 -d "hello,world"
+curl -X GET http://127.0.0.1:8080/calc?q=1%2B2

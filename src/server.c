@@ -1,6 +1,6 @@
 
 /*
- * HTTPサーバーをつくるというよりはTCPサーバーを作るという方が近い。
+ * TCPサーバーを作ってHTTPをやり取りするという考え方のほうが正確そう。
  * 利用するsystem call
  * - socket()
  * - bind()
@@ -43,6 +43,19 @@
  *   addrlen: addrから計算できそうだが引数で渡す必要があるのか？
  *
  * そもそもman bindのようにセクション番号指定する必要ない？
+ * どのセクションを見ているかを意識しておけば問題なさそう。
+ * 他にセクションがあるのかというのは man -f socket とすると確認できる。
+ *
+ * HTTP Responseを作ってクライアントに返す必要がある。
+ * man -k httpで調べたらpm3(Perl Module Section 3)がヒットした。
+ * LLMによると歴史的な経緯からPerl Moduleはmanualに含まれているとのこと。
+ * Rustの場合はrustup doc --std
+ * でオフライン環境でも標準ライブラリのドキュメントが読める。
+ * 脱線したが、HTTPのRFCを読んで仕様通りのHTTP Responseを作る。
+ * https://www.rfc-editor.org/rfc/rfc9112.html
+ * obsoleteとなっていれば最新の仕様ではないので注意する。
+ * C言語では文字列は文字の配列として表され、\0が文字列終端を表す。
+ *
  */
 
 #include <arpa/inet.h> // man -k ipv4 -> man 3 inet_pton
@@ -51,6 +64,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/socket.h>
+#include <unistd.h>
 
 #define LISTEN_BACKLOG 50 // man bind(2)のexampleを参考にそのまま流用
 // man bind(2)のexampleを参考にそのまま流用
@@ -59,6 +73,14 @@
     perror(msg);                                                               \
     exit(EXIT_FAILURE);                                                        \
   } while (0)
+
+typedef struct {
+  char method[3];         // 暫定で GET だけ対応する
+  char request_target[5]; // 暫定で 1%2B2 だけ対応する
+} http_message;
+
+int parse_http_message(const char *buf, unsigned long buf_len,
+                       http_message *http_message);
 
 int main(int argc, const char *argv[]) {
   /* ========== SOCKET ========== */
@@ -118,14 +140,40 @@ int main(int argc, const char *argv[]) {
   /* ========== ACCEPT ========== */
 
   /* ========== RECV ========== */
-  char buffer[1000];
-  int recived_len = recv(accept_fd, &buffer, sizeof(buffer), 0);
+  char recived_buffer[1000];
+  int recived_len = recv(accept_fd, &recived_buffer, sizeof(recived_buffer), 0);
   if (recived_len == -1) {
     handle_error("recv");
   }
-  printf("recive data len:%d\n", recived_len);
-  printf("recive data:%s\n", buffer);
+  printf("recived data len:%d\n", recived_len);
+  printf("recived data:\n%s\n", recived_buffer);
   /* ========== RECV ========== */
 
+  /* ========== HTTP Request Parse ========== */
+  /* ========== HTTP Request Parse ========== */
+
+  /* ========== HTTP Response ========== */
+  /* ========== HTTP Response ========== */
+
+  if (close(socket_fd) == -1) {
+    handle_error("close");
+  }
+  return 0;
+}
+
+int parse_http_message(const char *buf, unsigned long buf_len,
+                       http_message *http_message) {
+  /*
+   * https://www.rfc-editor.org/rfc/rfc9112.html#name-message-format
+   * start-lineを見つける。最初のCRLFを探す。
+   */
+  char start_line_buf[buf_len];
+  for (int i = 0; i < buf_len; i++) {
+    if (buf[i] == '\n' && 0 < i && buf[i - 1] == '\r') {
+      break;
+    }
+    start_line_buf[i] = buf[i];
+  }
+  printf("start-line: %s\n", start_line_buf);
   return 0;
 }
