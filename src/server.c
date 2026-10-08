@@ -59,6 +59,7 @@
  */
 
 #include <arpa/inet.h> // man -k ipv4 -> man 3 inet_pton
+#include <ctype.h>
 #include <err.h>
 #include <netinet/in.h> // man sockaddr
 #include <stdio.h>
@@ -75,8 +76,8 @@
   } while (0)
 
 typedef struct {
-  char method[3];         // 暫定で GET だけ対応する
-  char request_target[5]; // 暫定で 1%2B2 だけ対応する
+  char method[4];          // 暫定で GET だけ対応する
+  char request_target[14]; // 暫定で /calc?q=1%2B2 だけ対応する
 } http_message;
 
 int parse_http_message(const char *buf, unsigned long buf_len,
@@ -150,6 +151,11 @@ int main(int argc, const char *argv[]) {
   /* ========== RECV ========== */
 
   /* ========== HTTP Request Parse ========== */
+  http_message http_message;
+  if (parse_http_message(recived_buffer, sizeof(recived_buffer),
+                         &http_message) == -1) {
+    handle_error("parse http request");
+  }
   /* ========== HTTP Request Parse ========== */
 
   /* ========== HTTP Response ========== */
@@ -158,22 +164,63 @@ int main(int argc, const char *argv[]) {
   if (close(socket_fd) == -1) {
     handle_error("close");
   }
+  printf("socket closed.\n");
   return 0;
 }
 
-int parse_http_message(const char *buf, unsigned long buf_len,
-                       http_message *http_message) {
+int parse_http_message(const char *data, unsigned long buf_len,
+                       http_message *out) {
   /*
    * https://www.rfc-editor.org/rfc/rfc9112.html#name-message-format
    * start-lineを見つける。最初のCRLFを探す。
    */
   char start_line_buf[buf_len];
-  for (int i = 0; i < buf_len; i++) {
-    if (buf[i] == '\n' && 0 < i && buf[i - 1] == '\r') {
+  // buf_len - 1 で終端文字分を確保しとく。
+  for (int i = 0; i < buf_len - 1; i++) {
+    if (data[i] == '\n' && 0 < i && data[i - 1] == '\r') {
+      start_line_buf[i] = data[i];
+      // 終端文字を明示的に入れないとprintfで文字化けする
+      start_line_buf[i + 1] = '\0';
       break;
     }
-    start_line_buf[i] = buf[i];
+    start_line_buf[i] = data[i];
   }
-  printf("start-line: %s\n", start_line_buf);
+  printf("start-line: %s", start_line_buf);
+  // GET /calc?q=1%2B2 HTTP/1.1
+
+  /*
+   * https://www.rfc-editor.org/rfc/rfc9112.html#name-request-line
+   * start-lineのうちrequest-lineからmethodとrequest-targetを取り出してhttp_message構造体を作る。
+   * LLMに聞いたところ、SP（空白）の位置を特定して先頭位置からSPまでの長さという感じでポインタで管理すると良いらしい。
+   * ctype.hに標準ブランク文字を判定する関数isblankがある。
+   * https://ja.wikibooks.org/wiki/C%E8%A8%80%E8%AA%9E/%E6%A8%99%E6%BA%96%E3%83%A9%E3%82%A4%E3%83%96%E3%83%A9%E3%83%AA/ctype.h#isblank%E9%96%A2%E6%95%B0
+   */
+  int method_start = 0, method_size = 0, request_line_start = 0,
+      request_line_size = 0;
+  for (int i = 0; i < sizeof(start_line_buf); i++) {
+    if (isblank(start_line_buf[i])) {
+      if (request_line_start != 0 && request_line_size == 0) {
+        request_line_size = i - request_line_start;
+      }
+      if (method_size == 0) {
+        method_size = i;
+        request_line_start = i + 1;
+      }
+    }
+  }
+
+  printf("method: ");
+  for (int i = method_start; i < method_size; i++) {
+    printf("%c", start_line_buf[i]);
+  }
+  printf("\n");
+
+  printf("request-line: ");
+  for (int i = request_line_start; i < request_line_start + request_line_size;
+       i++) {
+    printf("%c", start_line_buf[i]);
+  }
+  printf("\n");
+
   return 0;
 }
