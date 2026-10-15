@@ -231,6 +231,45 @@ int parse_query(const request_line *request_line, query *out) {
   return 0;
 }
 
+int url_percent_decode(const query *query, char *out) {
+  int query_value_len = query->value_start + query->value_size;
+  for (int i = query->value_start; i < query_value_len; i++) {
+    if (query->receved_buf[i] != '%') {
+      out[i] = query->receved_buf[i];
+      continue;
+    }
+    // percent decode
+    // %を見つけたら2文字先読みできそうか。
+    if (query_value_len <= i + 2) {
+      handle_error("invalid query string");
+      break;
+    }
+    char first_c = query->receved_buf[i + 1];
+    char second_c = query->receved_buf[i + 2];
+    if (isxdigit(first_c) != 0 || isxdigit(second_c) != 0) {
+      handle_error("invalid query string");
+      break;
+    }
+    // TODO
+  }
+
+  return 0;
+}
+
+int hex_to_int(char c) {
+  if (isdigit(c)) {
+    return c - '0';
+  }
+  if (islower(c)) {
+    return c - 'a' + 10;
+  }
+  if (isupper(c)) {
+    return c - 'A' + 10;
+  }
+
+  return -1;
+}
+
 int main(int argc, const char *argv[]) {
   /* ========== SOCKET ========== */
   int socket_fd;
@@ -241,11 +280,12 @@ int main(int argc, const char *argv[]) {
   }
   printf("create socket ok.\n");
   /*
-   * Address alredy i use対応
+   * Address alredy in use対応
    * socketoptで再利用するオプションを設定する。（LLMに聞いた）
    */
   int opt = 1;
-  if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(1)) == -1) {
+  if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) ==
+      -1) {
     handle_error("set socket opt");
   }
   /* ========== SOCKET ========== */
@@ -321,6 +361,8 @@ int main(int argc, const char *argv[]) {
   parse_request_line(&http_message, &request_line);
   query query;
   parse_query(&request_line, &query);
+  char decoded_query_value[query.value_size];
+  url_percent_decode(&query, decoded_query_value);
   /* ========== HTTP Request Parse ========== */
 
   /* ========== CalcuLate ========== */
