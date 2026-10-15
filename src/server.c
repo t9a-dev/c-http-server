@@ -59,6 +59,7 @@
  */
 
 #include <arpa/inet.h> // man -k ipv4 -> man 3 inet_pton
+#include <asm-generic/socket.h>
 #include <ctype.h>
 #include <err.h>
 #include <netinet/in.h> // man sockaddr
@@ -166,12 +167,20 @@ int parse_http_message(const char *buffer, unsigned long buffer_len,
 int main(int argc, const char *argv[]) {
   /* ========== SOCKET ========== */
   int socket_fd;
-  socket_fd = socket(AF_INET, SOCK_STREAM, 6);
+  socket_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
   // man 2 bind のexampleのエラー処理を参考にした
   if (socket_fd == -1) {
     handle_error("socket");
   }
   printf("create socket ok.\n");
+  /*
+   * Address alredy i use対応
+   * socketoptで再利用するオプションを設定する。（LLMに聞いた）
+   */
+  int opt = 1;
+  if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(1)) == -1) {
+    handle_error("set socket opt");
+  }
   /* ========== SOCKET ========== */
 
   /* ========== BIND ========== */
