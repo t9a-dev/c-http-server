@@ -90,6 +90,12 @@ typedef struct {
   size_t query_start, query_size;
 } request_line;
 
+typedef struct {
+  const char *receved_buf;
+  size_t key_start, key_size;
+  size_t value_start, value_size;
+} query;
+
 int assert_http_method(const http_message *http_message, const char *method) {
   if (http_message->method_size != strlen(method)) {
     printf("method_size: %ld != method_strlen: %ld\n",
@@ -198,6 +204,33 @@ int parse_request_line(const http_message *http_message, request_line *out) {
   return 0;
 }
 
+int parse_query(const request_line *request_line, query *out) {
+  out->receved_buf = request_line->receved_buf;
+  out->key_start = 0, out->key_size = 0, out->value_start = 0,
+  out->value_size = 0;
+
+  const char *pos = memchr(request_line->receved_buf + request_line->path_start,
+                           '=', sizeof(request_line->path_size));
+  if (pos == NULL) {
+    handle_error("query string error. '=' not found.");
+    return -1;
+  }
+  // GET /calc?q=1%2B2 HTTP/1.1
+  size_t equal_token_position = pos - out->receved_buf;
+  out->key_start = request_line->query_start;
+  out->key_size = equal_token_position - request_line->query_start;
+  out->value_start = equal_token_position + 1;
+  out->value_size =
+      request_line->query_start + request_line->query_size - out->value_start;
+  printf("= position: %ld\n", pos - out->receved_buf);
+  printf("query key start: %ld\n", out->key_start);
+  printf("query key size: %ld\n", out->key_size);
+  printf("query value start: %ld\n", out->value_start);
+  printf("query value size: %ld\n", out->value_size);
+
+  return 0;
+}
+
 int main(int argc, const char *argv[]) {
   /* ========== SOCKET ========== */
   int socket_fd;
@@ -286,6 +319,8 @@ int main(int argc, const char *argv[]) {
   }
   request_line request_line;
   parse_request_line(&http_message, &request_line);
+  query query;
+  parse_query(&request_line, &query);
   /* ========== HTTP Request Parse ========== */
 
   /* ========== CalcuLate ========== */
