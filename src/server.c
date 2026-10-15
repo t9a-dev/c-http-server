@@ -84,6 +84,12 @@ typedef struct {
   size_t request_target_start, request_target_size;
 } http_message;
 
+typedef struct {
+  const char *receved_buf;
+  size_t path_start, path_size;
+  size_t query_start, query_size;
+} request_line;
+
 int assert_http_method(const http_message *http_message, const char *method) {
   if (http_message->method_size != strlen(method)) {
     printf("method_size: %ld != method_strlen: %ld\n",
@@ -154,12 +160,40 @@ int parse_http_message(const char *buffer, unsigned long buffer_len,
   }
   printf("\n");
 
-  printf("request-line: ");
+  printf("request-target: ");
   for (int i = out->request_target_start;
        i < out->request_target_start + out->request_target_size; i++) {
     printf("%c", buffer[i]);
   }
   printf("\n");
+
+  return 0;
+}
+
+int parse_request_line(const http_message *http_message, request_line *out) {
+  out->receved_buf = http_message->receved_buf;
+  out->path_start = 0, out->path_size = 0, out->query_start = 0,
+  out->query_size = 0;
+
+  const char *pos =
+      memchr(http_message->receved_buf + http_message->request_target_start,
+             '?', sizeof(http_message->request_target_size));
+  if (pos == NULL) {
+    handle_error("parse request line error. query(?) not found.");
+    return -1;
+  }
+  // GET /calc?q=1%2B2 HTTP/1.1
+  // '?'自体はpathとqueryの区切り文字なので、auery文字列に含めないので+1
+  out->query_start = pos - http_message->receved_buf + 1;
+  out->path_start = http_message->request_target_start;
+  // -1で'?'分を調整
+  out->path_size = out->query_start - http_message->request_target_start - 1;
+  out->query_size = http_message->request_target_start +
+                    http_message->request_target_size - out->query_start;
+  printf("path start: %ld\n", out->path_start);
+  printf("path size: %ld\n", out->path_size);
+  printf("query start: %ld\n", out->query_start);
+  printf("query size: %ld\n", out->query_size);
 
   return 0;
 }
@@ -198,7 +232,7 @@ int main(int argc, const char *argv[]) {
    * なので、一般ユーザーのプロセスではbind()できない。
    * 80はprivileged portなので8080にしておく。
    */
-  sockaddr_in_t.sin_port = htons(8080);
+  sockaddr_in_t.sin_port = htons(8081);
   // bindの第2引数はsockaddrのポインタを取るので、ipv4を表すsockaddr_inを渡したければsockaddr_inから
   // sockaddrのポインタとしてキャストする必要がある。
   // https://stackoverflow.com/questions/51757117/cast-struct-pointer-to-another-struct
@@ -246,10 +280,12 @@ int main(int argc, const char *argv[]) {
     handle_error("parse http request");
   }
   // HTTP MethodがGETでなければエラーとする。
-  char method[] = "GET";
-  if (assert_http_method(&http_message, method) != 0) {
+  char alowed_method[] = "GET";
+  if (assert_http_method(&http_message, alowed_method) != 0) {
     handle_error("http method must be GET");
   }
+  request_line request_line;
+  parse_request_line(&http_message, &request_line);
   /* ========== HTTP Request Parse ========== */
 
   /* ========== CalcuLate ========== */

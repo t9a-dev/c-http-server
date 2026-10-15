@@ -8,5 +8,5 @@ printf "\n"
 
 sleep 1
 
-curl -X GET http://127.0.0.1:8080/calc?q=1%2B2
-# curl -X POST http://127.0.0.1:8080/calc?q=1%2B2
+curl -X GET http://127.0.0.1:8081/calc?q=1%2B2
+# curl -X POST http://127.0.0.1:8081/calc?q=1%2B2
