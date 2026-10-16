@@ -231,31 +231,6 @@ int parse_query(const request_line *request_line, query *out) {
   return 0;
 }
 
-int url_percent_decode(const query *query, char *out) {
-  int query_value_len = query->value_start + query->value_size;
-  for (int i = query->value_start; i < query_value_len; i++) {
-    if (query->receved_buf[i] != '%') {
-      out[i] = query->receved_buf[i];
-      continue;
-    }
-    // percent decode
-    // %を見つけたら2文字先読みできそうか。
-    if (query_value_len <= i + 2) {
-      handle_error("invalid query string");
-      break;
-    }
-    char first_c = query->receved_buf[i + 1];
-    char second_c = query->receved_buf[i + 2];
-    if (isxdigit(first_c) != 0 || isxdigit(second_c) != 0) {
-      handle_error("invalid query string");
-      break;
-    }
-    // TODO
-  }
-
-  return 0;
-}
-
 int hex_to_int(char c) {
   if (isdigit(c)) {
     return c - '0';
@@ -268,6 +243,53 @@ int hex_to_int(char c) {
   }
 
   return -1;
+}
+
+int url_percent_decode(const query *query, char *out) {
+  int i = query->value_start;
+  int j = 0;
+  int query_value_len = query->value_start + query->value_size;
+  for (; i < query_value_len; i++, j++) {
+    printf("i: %d\n", i);
+    printf("receved_buf[i]: %c\n", query->receved_buf[i]);
+    if (query->receved_buf[i] != '%') {
+      out[j] = query->receved_buf[i];
+      printf("out[j]: %c\n", out[j]);
+      continue;
+    }
+    // percent decode
+    // %を見つけたら2文字先読みできそうか。
+    if (query_value_len <= i + 2) {
+      handle_error("invalid query string. checked length");
+      break;
+    }
+
+    char first_c = query->receved_buf[i + 1];
+    char second_c = query->receved_buf[i + 2];
+    if (isxdigit(first_c) == 0 || isxdigit(second_c) == 0) {
+      printf("first_c: %c\n", first_c);
+      printf("second_c: %c\n", second_c);
+      handle_error("invalid query string");
+      break;
+    }
+
+    int first_c_int = hex_to_int(first_c);
+    int second_c_int = hex_to_int(second_c);
+    printf("first_c_int: %d\n", first_c_int);
+    printf("second_c_int: %d\n", second_c_int);
+    if (first_c_int == -1 || second_c_int == -1) {
+      handle_error("failed hex to int");
+      break;
+    }
+    char decoded_c = (first_c_int << 4) + second_c_int;
+    printf("decoded_c: %c\n", decoded_c);
+    out[j] = decoded_c;
+    printf("out[j]: %c\n", out[j]);
+    i = i + 2;
+  }
+
+  out[j + 1] = '\0';
+  return 0;
 }
 
 int main(int argc, const char *argv[]) {
@@ -363,6 +385,8 @@ int main(int argc, const char *argv[]) {
   parse_query(&request_line, &query);
   char decoded_query_value[query.value_size];
   url_percent_decode(&query, decoded_query_value);
+  printf("decoded_query_len: %ld\n", strlen(decoded_query_value));
+  printf("decoded_query_value: %s\n", decoded_query_value);
   /* ========== HTTP Request Parse ========== */
 
   /* ========== CalcuLate ========== */
