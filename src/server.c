@@ -346,8 +346,10 @@ int solve_formula(const char *formula, int *out) {
 }
 
 int main(int argc, const char *argv[]) {
+  printf("\n========== DEBUG ==========\n");
   /* ========== SOCKET ========== */
   int socket_fd;
+  // 6: /etc/protocols で定義されているTCPの番号
   socket_fd = socket(AF_INET, SOCK_STREAM, 6);
   // man 2 bind のexampleのエラー処理を参考にした
   if (socket_fd == -1) {
@@ -478,5 +480,6 @@ int main(int argc, const char *argv[]) {
     handle_error("close");
   }
   printf("socket closed.\n");
+  printf("\n========== DEBUG ==========\n");
   return 0;
 }
