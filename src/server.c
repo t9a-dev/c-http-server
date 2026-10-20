@@ -59,7 +59,6 @@
  */
 
 #include <arpa/inet.h> // man -k ipv4 -> man 3 inet_pton
-#include <asm-generic/socket.h>
 #include <ctype.h>
 #include <err.h>
 #include <netinet/in.h> // man sockaddr
@@ -349,7 +348,7 @@ int solve_formula(const char *formula, int *out) {
 int main(int argc, const char *argv[]) {
   /* ========== SOCKET ========== */
   int socket_fd;
-  socket_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+  socket_fd = socket(AF_INET, SOCK_STREAM, 6);
   // man 2 bind のexampleのエラー処理を参考にした
   if (socket_fd == -1) {
     handle_error("socket");
