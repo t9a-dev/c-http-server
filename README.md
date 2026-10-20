@@ -1,7 +1,9 @@
 # 概要
+
 C言語によるHTTP Server実装。[SWE協会](https://www.swe.or.jp/)内で行われているCSZAP5での宿題。
 
 ## 要件
+
 - `http://localhost:80/calc?q=1%2B2`にアクセスしたらHTMLのコンテンツとして3を返す実装を行う。
 - system call manualを読む
 - コードは自分で書く（AIにコードを書かせるようなことはしない）
@@ -15,3 +17,12 @@ C言語によるHTTP Server実装。[SWE協会](https://www.swe.or.jp/)内で行
   - マルチスレッド対応を行う
   - シグナルを受け取ったら新規接続停止して、全接続終了に正常終了する
   - HTTPS対応を行う
+
+## 開発
+
+### 動作確認
+
+```sh
+# ソースコードのビルドと実行、curlによるHTTP Request実行
+./test-run-server-and-http-get-request.sh
+```
