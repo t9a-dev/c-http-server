@@ -288,7 +288,61 @@ int url_percent_decode(const query *query, char *out) {
     i = i + 2;
   }
 
-  out[j + 1] = '\0';
+  out[j] = '\0';
+  return 0;
+}
+
+int calculate(const char operator, const int in, int *out) {
+  /*
+   * swithch文に対してcase labelのインデントが深くならないのは
+   * clangdのデフォルトスタイル
+   * https://clang.llvm.org/docs/ClangFormatStyleOptions.html#examples
+   */
+  switch (operator) {
+  case '+':
+    *out += in;
+    return 0;
+  case '-':
+    *out -= in;
+    return 0;
+  default:
+    return -1;
+  }
+}
+
+int solve_formula(const char *formula, int *out) {
+  printf("solve_formula start\n");
+  *out = 0;
+  int current_number = 0;
+  char operator = '+';
+  // formula: 1+2
+  for (int i = 0; i < sizeof(formula); i++) {
+    char c = formula[i];
+    if (c == '\0') {
+      if (calculate(operator, current_number, out) == -1) {
+        handle_error("failed calculate");
+        return -1;
+      }
+      break;
+    }
+
+    printf("formula_c: %c\n", c);
+    if (isdigit(c) != 0) {
+      current_number *= 10;
+      current_number += c - '0';
+      printf("current_number: %d\n", current_number);
+      continue;
+    }
+
+    if (calculate(operator, current_number, out) == -1) {
+      handle_error("failed calculate");
+      return -1;
+    }
+    current_number = 0;
+    operator = c;
+    printf("out: %d\n", *out);
+  }
+
   return 0;
 }
 
@@ -385,11 +439,13 @@ int main(int argc, const char *argv[]) {
   parse_query(&request_line, &query);
   char decoded_query_value[query.value_size];
   url_percent_decode(&query, decoded_query_value);
-  printf("decoded_query_len: %ld\n", strlen(decoded_query_value));
   printf("decoded_query_value: %s\n", decoded_query_value);
   /* ========== HTTP Request Parse ========== */
 
   /* ========== CalcuLate ========== */
+  int calculate_result = 0;
+  solve_formula(decoded_query_value, &calculate_result);
+  printf("calculate_reuslt: %d\n", calculate_result);
   /* ========== CalcuLate ========== */
 
   /* ========== HTTP Response ========== */
