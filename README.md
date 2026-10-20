@@ -20,9 +20,9 @@ C言語によるHTTP Server実装。[SWE協会](https://www.swe.or.jp/)内で行
 
 ## 開発
 
-### Hello,World
+### 動作確認
 
 ```sh
-gcc src/hello-world.c -o build/hello-world
-./build/hello-world # hello, world
+# ソースコードのビルドと実行、curlによるHTTP Request実行
+./test-run-server-and-http-get-request.sh
 ```
