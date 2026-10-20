@@ -449,7 +449,30 @@ int main(int argc, const char *argv[]) {
   /* ========== CalcuLate ========== */
 
   /* ========== HTTP Response ========== */
-
+  char response_buffer[500];
+  int calculate_result_len = snprintf(NULL, 0, "%d", calculate_result);
+  if (calculate_result_len < 0) {
+    handle_error("failed calculate result to characters");
+  }
+  int response_len =
+      snprintf(response_buffer, sizeof(response_buffer),
+               "HTTP/1.1 200 OK\r\ncontent-type: text/plain\r\ncontent-length: "
+               "%d\r\n\r\n%d",
+               calculate_result_len, calculate_result);
+  if (response_len < 0) {
+    handle_error("failed build response text");
+  }
+  printf("response_buffer: \n%s\n", response_buffer);
+  printf("response_buffer_len: \n%d\n", response_len);
+  /*
+   * sendの第一引数に指定するfile descriptor(fd)に
+   * socket()が返すfdを指定するミスをした。
+   * accept()が返すfdを指定するべき。
+   * accept()が返すfdはConnected Socketなので。
+   */
+  if (send(accept_fd, response_buffer, response_len, 0) < 0) {
+    handle_error("send");
+  }
   /* ========== HTTP Response ========== */
 
   if (close(socket_fd) == -1) {
